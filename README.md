@@ -1,21 +1,15 @@
-# template-service
+# shoplab-chat-service
 
-Plantilla de los microservicios Java de ShopLab Helpdesk (LAB-103, corregida en LAB-129): Spring Boot 4.x reactivo,
-persistencia JDBC con un esquema propio (ADR-0011, ADR-0015), pipeline de `shoplab-ci` e imagen firmada.
+Orquestador conversacional de **ShopLab Helpdesk** extraído del monolito en **LAB-59**.
 
-## Crear un servicio
+## Responsabilidades
+- Streaming SSE de respuestas (`POST /api/chat`) con citas RAG contra `retrieval-service` (LAB-129).
+- Conversación de cortesía acotada (LAB-114) y memoria multi-turno en PostgreSQL (`chat.conversation_turn`, LAB-24).
+- Valoración de respuestas y promoción a dataset golden (`PUT /api/chat/feedback/{turnId}`, `GET /api/chat/feedback`, `POST /api/chat/feedback/{turnId}/promote`, LAB-33).
+- Instantánea de configuración del asistente (`GET /api/assistant/settings`) consumida por `eval` con contrato en `shoplab-contracts` y stubs Spring Cloud Contract.
+- Gestión de prompts versionados (LAB-85) y trazas OTLP en Langfuse (LAB-64), y generación de modelos a través de LiteLLM (LAB-84).
 
-1. Genera el repositorio desde esta plantilla.
-2. Cambia `template-service` por el nombre del servicio en `pom.xml`, `release-please-config.json`,
-   `src/main/resources/application.yml` y `.github/workflows/`.
-3. Añade `DEPLOY_APP_ID` (variable) y `DEPLOY_APP_PRIVATE_KEY` y `RELEASE_PLEASE_TOKEN` (secretos).
-4. Tras la primera release, haz público el paquete de la imagen (no es reversible).
-
-## Construir
-
+## Verificación local
 ```bash
-./mvnw verify   # necesita Docker y acceso a GitHub Packages (servidor `github-shoplab-contracts` en settings.xml)
-GITHUB_TOKEN=... docker build --secret id=github_token,env=GITHUB_TOKEN -t template-service .
+./mvnw -s .mvn/ci-settings.xml verify
 ```
-
-No lleva autenticación hasta que exista el login (LAB-61).

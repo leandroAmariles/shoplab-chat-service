@@ -1,40 +1,95 @@
-server:
-  port: 8080
-  shutdown: graceful
-
 spring:
   application:
-    name: ${SERVICE_NAME:template-service}
-  datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/shoplab}
-    username: ${POSTGRES_USER:shoplab}
-    password: ${POSTGRES_PASSWORD:change-me-local-only}
-  # One schema per service (ADR-0015), with its own history table.
-  flyway:
-    schemas: ${SERVICE_SCHEMA:template}
-    default-schema: ${SERVICE_SCHEMA:template}
-    locations: classpath:db/migration/${SERVICE_SCHEMA:template}
+    name: chat-service
   reactor:
     context-propagation: auto
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/chat}
+    username: ${POSTGRES_USER:chat}
+    password: ${POSTGRES_PASSWORD:change-me-local-only}
+  flyway:
+    enabled: false
+  ai:
+    openai:
+      base-url: ${SPRING_AI_OPENAI_BASE_URL:http://localhost:4000/v1}
+      api-key: ${SPRING_AI_OPENAI_API_KEY:sk-shoplab-chat-local}
+      max-retries: 0
+      timeout: ${SHOPLAB_CHAT_GATEWAY_REQUEST_TIMEOUT:60s}
+      chat:
+        model: chat
 
-# No authentication until there is a login (LAB-61).
+server:
+  port: 8080
+
+shoplab:
+  chat:
+    max-message-length: 4000
+    gateway:
+      primary-model: ${SHOPLAB_CHAT_GATEWAY_PRIMARY_MODEL:chat}
+      request-timeout: ${SHOPLAB_CHAT_GATEWAY_REQUEST_TIMEOUT:60s}
+    rag:
+      top-k: ${SHOPLAB_CHAT_RAG_TOP_K:4}
+      similarity-threshold: ${SHOPLAB_CHAT_RAG_SIMILARITY_THRESHOLD:0.6}
+      max-context-characters: ${SHOPLAB_CHAT_RAG_MAX_CONTEXT_CHARACTERS:8000}
+      no-context-mode: ${SHOPLAB_CHAT_RAG_NO_CONTEXT_MODE:fixed-message}
+    memory:
+      max-turns: ${SHOPLAB_CHAT_MEMORY_MAX_TURNS:5}
+      max-history-characters: ${SHOPLAB_CHAT_MEMORY_MAX_HISTORY_CHARACTERS:4000}
+      retrieval-turns: ${SHOPLAB_CHAT_MEMORY_RETRIEVAL_TURNS:1}
+    feedback:
+      base-golden-case-number: ${SHOPLAB_CHAT_FEEDBACK_BASE_GOLDEN_CASE_NUMBER:120}
+    small-talk:
+      enabled: ${SHOPLAB_CHAT_SMALL_TALK_ENABLED:true}
+      topics: ${SHOPLAB_CHAT_SMALL_TALK_TOPICS:}
+      greetings: ${SHOPLAB_CHAT_SMALL_TALK_GREETINGS:}
+      thanks: ${SHOPLAB_CHAT_SMALL_TALK_THANKS:}
+      farewells: ${SHOPLAB_CHAT_SMALL_TALK_FAREWELLS:}
+      acknowledgments: ${SHOPLAB_CHAT_SMALL_TALK_ACKNOWLEDGMENTS:}
+      capabilities: ${SHOPLAB_CHAT_SMALL_TALK_CAPABILITIES:}
+    prompts:
+      enabled: ${SHOPLAB_CHAT_PROMPTS_ENABLED:false}
+      base-url: ${SHOPLAB_CHAT_PROMPTS_BASE_URL:http://localhost:3001}
+      public-key: ${SHOPLAB_CHAT_PROMPTS_PUBLIC_KEY:${SHOPLAB_CHAT_TRACING_PUBLIC_KEY:}}
+      secret-key: ${SHOPLAB_CHAT_PROMPTS_SECRET_KEY:${SHOPLAB_CHAT_TRACING_SECRET_KEY:}}
+      label: ${SHOPLAB_CHAT_PROMPTS_LABEL:production}
+      refresh-interval: ${SHOPLAB_CHAT_PROMPTS_REFRESH_INTERVAL:60s}
+      request-timeout: ${SHOPLAB_CHAT_PROMPTS_REQUEST_TIMEOUT:2s}
+      max-prompt-characters: ${SHOPLAB_CHAT_PROMPTS_MAX_PROMPT_CHARACTERS:20000}
+      publish-missing: ${SHOPLAB_CHAT_PROMPTS_PUBLISH_MISSING:false}
+      override-token: ${SHOPLAB_CHAT_PROMPTS_OVERRIDE_TOKEN:}
+    tracing:
+      enabled: ${SHOPLAB_CHAT_TRACING_ENABLED:false}
+      endpoint: ${SHOPLAB_CHAT_TRACING_ENDPOINT:http://localhost:3001/api/public/otel}
+      public-key: ${SHOPLAB_CHAT_TRACING_PUBLIC_KEY:}
+      secret-key: ${SHOPLAB_CHAT_TRACING_SECRET_KEY:}
+      environment: ${SHOPLAB_CHAT_TRACING_ENVIRONMENT:local}
+      max-content-characters: ${SHOPLAB_CHAT_TRACING_MAX_CONTENT_CHARACTERS:20000}
+      queue-size: ${SHOPLAB_CHAT_TRACING_QUEUE_SIZE:2048}
+      batch-size: ${SHOPLAB_CHAT_TRACING_BATCH_SIZE:256}
+      schedule-delay: ${SHOPLAB_CHAT_TRACING_SCHEDULE_DELAY:2s}
+      export-timeout: ${SHOPLAB_CHAT_TRACING_EXPORT_TIMEOUT:5s}
+      shutdown-timeout: ${SHOPLAB_CHAT_TRACING_SHUTDOWN_TIMEOUT:5s}
+      pricing:
+        ollama:
+          input-per-million: 0
+          output-per-million: 0
+  retrieval:
+    client:
+      base-url: ${SHOPLAB_RETRIEVAL_CLIENT_BASE_URL:http://localhost:8082}
+      timeout: ${SHOPLAB_RETRIEVAL_CLIENT_TIMEOUT:15s}
+
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
-      group:
-        readiness:
-          include: readinessState,db
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
   metrics:
     tags:
       application: ${spring.application.name}
-
-logging:
-  structured:
-    format:
-      console: logstash
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
