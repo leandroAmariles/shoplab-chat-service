@@ -4,6 +4,9 @@ version: "1.0"
 # reported as not compatible and could not resolve imported symbols (LAB-129).
 linter: qodana-jvm-community
 
+# shoplab-contracts and retrieval-service stubs come from GitHub Packages (LAB-129 / LAB-59).
+bootstrap: mkdir -p "$HOME/.m2" && cp .mvn/ci-settings.xml "$HOME/.m2/settings.xml"
+
 projectJDK: "21"
 
 profile:
