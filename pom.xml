@@ -21,7 +21,7 @@
         <spring-ai.version>2.0.2</spring-ai.version>
         <spring-cloud-contract.version>5.0.3</spring-cloud-contract.version>
         <rest-assured.version>6.3.0</rest-assured.version>
-        <blockhound.version>1.0.18.RELEASE</blockhound.version>
+        <blockhound.version>1.0.19.RELEASE</blockhound.version>
         <wiremock.version>3.13.2</wiremock.version>
         <archunit.version>1.4.1</archunit.version>
         <jacoco.version>0.8.16</jacoco.version>
